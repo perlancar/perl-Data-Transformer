@@ -109,16 +109,6 @@ sub transmute_hash {
 
  use Data::Transmute qw(transmute_array transmute_hash);
 
- my %hash = (
-     foo => 1,
-
-     one => 2,
-     two => 3,
-
-     x_apple => 4,
-     x_mango => 5,
- );
-
  transmute_hash(
      data => \%hash,
      rules => [
@@ -147,17 +137,6 @@ sub transmute_hash {
 
      ],
  );
-
- # %hash will become:
- # (
- #     baz => 1,
- #
- #     1 => 2,
- #     2 => 3,
- #
- #     apple => 4,
- #     mango => 5,
- # )
 
 
 =head1 DESCRIPTION
