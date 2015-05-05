@@ -103,6 +103,8 @@ sub transmute_hash {
 1;
 # ABSTRACT: Transmute (transform) data structure using rules data
 
+=for Pod::Coverage ^(transmute_(array|hash)_.+)$
+
 =head1 SYNOPSIS
 
  use Data::Transmute qw(transmute_array transmute_hash);
