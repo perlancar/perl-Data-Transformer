@@ -147,7 +147,7 @@ subtest transmute_data => sub {
         );
     };
 
-    subtest delete_hash_key => sub {
+    subtest "rule: delete_hash_key" => sub {
         test_transmute_data(
             name   => "data not hash -> noop",
             data   => ["foo"],
@@ -165,6 +165,36 @@ subtest transmute_data => sub {
             data   => {bar=>1},
             rules  => [ [delete_hash_key=>{name=>'foo'}] ],
             result => {bar=>1},
+        );
+    };
+
+    subtest "rule: transmute_array_elems" => sub {
+        test_transmute_data(
+            name   => "data not array -> noop",
+            data   => {foo=>{bar=>1}},
+            rules  => [ [transmute_array_elems=>{rules=>[ [delete_hash_key=>{name=>'bar'}] ]}] ],
+            result => {foo=>{bar=>1}},
+        );
+        test_transmute_data(
+            name   => "basic",
+            data   => [{bar=>1}, {bar=>2}, {baz=>3}],
+            rules  => [ [transmute_array_elems=>{rules=>[ [delete_hash_key=>{name=>'bar'}] ]}] ],
+            result => [{}, {}, {baz=>3}],
+        );
+    };
+
+    subtest "rule: transmute_hash_values" => sub {
+        test_transmute_data(
+            name   => "data not hash -> noop",
+            data   => [{bar=>1}],
+            rules  => [ [transmute_hash_values=>{rules=>[ [delete_hash_key=>{name=>'bar'}] ]}] ],
+            result => [{bar=>1}],
+        );
+        test_transmute_data(
+            name   => "basic",
+            data   => {k1=>{bar=>1}, k2=>{bar=>2}, k3=>{baz=>3}},
+            rules  => [ [transmute_hash_values=>{rules=>[ [delete_hash_key=>{name=>'bar'}] ]}] ],
+            result => {k1=>{}, k2=>{}, k3=>{baz=>3}},
         );
     };
 };
