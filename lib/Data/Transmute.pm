@@ -175,7 +175,7 @@ sub reverse_rules {
 
 
          # this rule only applies when data is a hash, when data is not a hash
-         # this will will do nothing. create a single new hash key, error if key
+         # this will do nothing. create a single new hash key, error if key
          # already exists.
          [create_hash_key => {name=>'foo', value=>1}],
 
@@ -189,8 +189,8 @@ sub reverse_rules {
 
 
          # this rule only applies when data is a hash, when data is not a hash
-         # this will will do nothing. rename a single key, error if old name
-         # doesn't exist or new name exists.
+         # this will do nothing. rename a single key, error if old name doesn't
+         # exist or new name exists.
          [rename_hash_key => {from=>'qux', to=>'quux'}],
 
          # rename another key, but this time ignore if old name doesn't exist
@@ -199,20 +199,20 @@ sub reverse_rules {
 
 
          # this rule only applies when data is a hash, when data is not a hash
-         # this will will do nothing. delete a single key, will noop if key
-         # already doesn't exist.
+         # this will do nothing. delete a single key, will noop if key already
+         # doesn't exist.
          [delete_hash_key => {name=>'garply'}],
 
 
          # this rule only applies when data is an arrayref, when data is not a
-         # array this will will do nothing. for each array element, apply
-         # transmute rules to it.
+         # array this will do nothing. for each array element, apply transmute
+         # rules to it.
          [transmute_array_elems => {rules => [...]}],
 
 
          # this rule only applies when data is a hashref, when data is not a
-         # hash this will will do nothing. for each hash value, apply transmute
-         # rules to it.
+         # hash this will do nothing. for each hash value, apply transmute rules
+         # to it.
          [transmute_hash_values => {rules => [...]}],
 
 
