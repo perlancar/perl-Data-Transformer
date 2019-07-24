@@ -237,6 +237,16 @@ Each rule specification: [$funcname, \%args]
 
 \%args: a special arg will be inserted: C<data>.
 
+=head2 create_hash_key
+
+=head2 rename_hash_key
+
+=head2 delete_hash_key
+
+=head2 transmute_array_elems
+
+=head2 transmute_hash_values
+
 
 =head1 FUNCTIONS
 
