@@ -170,8 +170,9 @@ sub reverse_rules {
  );
 
  transmute_data(
-     data => \@array,
+     data => \@data,
      rules => [
+
 
          # this rule only applies when data is a hash, when data is not a hash
          # this will will do nothing. create a single new hash key, error if key
@@ -186,6 +187,7 @@ sub reverse_rules {
          # this is like REPLACE INTO in SQL.
          [create_hash_key => {name=>'baz', value=>3, replace=>1}],
 
+
          # this rule only applies when data is a hash, when data is not a hash
          # this will will do nothing. rename a single key, error if old name
          # doesn't exist or new name exists.
@@ -195,20 +197,24 @@ sub reverse_rules {
          # (ignore=1) or if new name already exists (replace=1)
          [rename_hash_key => {from=>'corge', to=>'grault', ignore_missing_from=>1, replace=>1}],
 
+
          # this rule only applies when data is a hash, when data is not a hash
          # this will will do nothing. delete a single key, will noop if key
          # already doesn't exist.
          [delete_hash_key => {name=>'garply'}],
+
 
          # this rule only applies when data is an arrayref, when data is not a
          # array this will will do nothing. for each array element, apply
          # transmute rules to it.
          [transmute_array_elems => {rules => [...]}],
 
+
          # this rule only applies when data is a hashref, when data is not a
          # hash this will will do nothing. for each hash value, apply transmute
          # rules to it.
          [transmute_hash_values => {rules => [...]}],
+
 
      ],
  );
