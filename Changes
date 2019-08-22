@@ -1,3 +1,12 @@
+0.031   2019-08-22  Released-By: PERLANCAR; Urgency: medium
+
+	- Rule transmute_array_elems: add arguments index_{is,in,match,filter}.
+
+	- Rule transmute_hash_values: add arguments key_{is,in,match,filter}.
+
+	- Add & tweak documentation.
+
+
 0.030   2019-07-24  Released-By: PERLANCAR; Urgency: medium; Backward-Compatible: no
 
 	[INCOMPATIBLE CHANGE]
