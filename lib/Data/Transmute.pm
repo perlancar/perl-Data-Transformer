@@ -79,7 +79,22 @@ sub _rule_transmute_array_elems {
     my $data = $args{data};
     return unless ref $data eq 'ARRAY';
 
+    my $idx = -1;
+  ELEM:
     for my $el (@$data) {
+        $idx++;
+        if (defined $args{index_is}) {
+            next ELEM unless $idx == $args{index_is};
+        }
+        if (defined $args{index_in}) {
+            next ELEM unless grep { $idx == $_ } @{ $args{index_in} };
+        }
+        if (defined $args{index_match}) {
+            next ELEM unless $idx =~ $args{index_match};
+        }
+        if (defined $args{index_filter}) {
+            next ELEM unless $args{index_filter}->(index=>$idx, array=>$data, rules=>$args{rules});
+        }
         $el = transmute_data(
             data => $el,
             rules => $args{rules},
@@ -93,6 +108,10 @@ sub _rulereverse_transmute_array_elems {
 
     [transmute_array_elems => {
         rules => reverse_rules(rules => $args{rules}),
+        (index_is     => $args{index_is})     x !!(exists $args{index_is}),
+        (index_in     => $args{index_in})     x !!(exists $args{index_in}),
+        (index_match  => $args{index_match})  x !!(exists $args{index_match}),
+        (index_filter => $args{index_filter}) x !!(exists $args{index_filter}),
     }];
 }
 
