@@ -121,7 +121,20 @@ sub _rule_transmute_hash_values {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
 
+  KEY:
     for my $key (keys %$data) {
+        if (defined $args{key_is}) {
+            next KEY unless $key eq $args{key_is};
+        }
+        if (defined $args{key_in}) {
+            next KEY unless grep { $key eq $_ } @{ $args{key_in} };
+        }
+        if (defined $args{key_match}) {
+            next KEY unless $key =~ $args{key_match};
+        }
+        if (defined $args{key_filter}) {
+            next KEY unless $args{key_filter}->(key=>$key, hash=>$data, rules=>$args{rules});
+        }
         $data->{$key} = transmute_data(
             data => $data->{$key},
             rules => $args{rules},
@@ -135,6 +148,10 @@ sub _rulereverse_transmute_hash_values {
 
     [transmute_hash_values => {
         rules => reverse_rules(rules => $args{rules}),
+        (key_is     => $args{key_is})     x !!(exists $args{key_is}),
+        (key_in     => $args{key_in})     x !!(exists $args{key_in}),
+        (key_match  => $args{key_match})  x !!(exists $args{key_match}),
+        (key_filter => $args{key_filter}) x !!(exists $args{key_filter}),
     }];
 }
 
