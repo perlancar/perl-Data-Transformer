@@ -102,9 +102,9 @@ sub _rule_transmute_hash_values {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
 
-    for my $k (keys %$data) {
-        $data->{$k} = transmute_data(
-            data => $data->{$k},
+    for my $key (keys %$data) {
+        $data->{$key} = transmute_data(
+            data => $data->{$key},
             rules => $args{rules},
         );
     }
