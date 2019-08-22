@@ -1,3 +1,12 @@
+0.032   2019-08-22  Released-By: PERLANCAR; Urgency: medium
+
+        - [bugfix] Properly refuse to create reverse rules for create_hash_key
+	  when ignore=1/replace=1, for rename_hash_key when
+	  ignore_missing_from=1/ignore_existing_target=1/replace=1.
+
+	- [test] Add reverse tests.
+
+
 0.031   2019-08-22  Released-By: PERLANCAR; Urgency: medium
 
 	- Rule transmute_array_elems: add arguments index_{is,in,match,filter}.
