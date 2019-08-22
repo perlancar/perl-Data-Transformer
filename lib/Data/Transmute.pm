@@ -4,7 +4,7 @@ package Data::Transmute;
 # VERSION
 
 use 5.010001;
-use strict;
+use strict 'subs', 'vars';
 use warnings;
 
 use Exporter qw(import);
@@ -158,13 +158,20 @@ sub _rulereverse_transmute_hash_values {
 }
 
 sub transmute_data {
-    no strict 'refs';
-
     my %args = @_;
 
     exists $args{data} or die "Please specify data";
     my $data  = $args{data};
-    my $rules = $args{rules} or die "Please specify rules";
+    my $rules = $args{rules};
+    if (!$rules) {
+        if (defined $args{rules_module}) {
+            my $mod = "Data::Transmute::Rules::$args{rules_module}";
+            (my $mod_pm = "$mod.pm") =~ s!::!/!g;
+            require $mod_pm;
+            $rules = \@{"$mod\::RULES"};
+        }
+    }
+    $rules or die "Please specify rules (or rules_module)";
 
     my $rulenum = 0;
     for my $rule (@$rules) {
@@ -182,8 +189,6 @@ sub transmute_data {
 }
 
 sub reverse_rules {
-    no strict 'refs';
-
     my %args = @_;
 
     my @rev_rules;
@@ -207,7 +212,7 @@ sub reverse_rules {
      reverse_rules
  );
 
- transmute_data(
+ my $transmuted_data = transmute_data(
      data => \@data,
      rules => [
 
@@ -285,6 +290,13 @@ sub reverse_rules {
      ],
  );
 
+You can also load rules from a C<Data::Transmute::Rules::*> module:
+
+ transmute_data(
+     data => $data,
+     rules_module => 'Convert_Proj1_Data_To_Proj2', # will load Data::Transmute::Rules::Convert_Proj1_Data_To_Proj2 and read its @RULES package variable
+ );
+
 
 =head1 DESCRIPTION
 
@@ -314,7 +326,21 @@ Known arguments (C<*> means required):
 
 =item * data*
 
-=item * rules*
+=item * rules
+
+Array of rules. See L</RULES> for more details.
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
+
+=item * rules_module
+
+Specify name of module (without the C<Data::Transmute::Rules::> prefix) which
+contains the actual rules. The module will be loaded and the rules retrieved
+from its C<@RULES> package variable.
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
 
 =back
 
