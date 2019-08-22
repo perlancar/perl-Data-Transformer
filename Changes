@@ -1,3 +1,10 @@
+0.033   2019-08-22  Released-By: PERLANCAR; Urgency: medium
+
+	- transmute_data(): Add argument rules_module.
+
+	- Remove old benchmark script.
+
+
 0.032   2019-08-22  Released-By: PERLANCAR; Urgency: medium
 
         - [bugfix] Properly refuse to create reverse rules for create_hash_key
