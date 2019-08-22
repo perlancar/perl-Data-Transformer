@@ -181,6 +181,30 @@ subtest transmute_data => sub {
             rules  => [ [transmute_array_elems=>{rules=>[ [delete_hash_key=>{name=>'bar'}] ]}] ],
             result => [{}, {}, {baz=>3}],
         );
+        test_transmute_data(
+            name   => "arg:index_is",
+            data   => [{a=>1}, {a=>2}, {a=>3}],
+            rules  => [ [transmute_array_elems=>{index_is=>1, rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => [{a=>1}, {}, {a=>3}],
+        );
+        test_transmute_data(
+            name   => "arg:index_in",
+            data   => [{a=>1}, {a=>2}, {a=>3}],
+            rules  => [ [transmute_array_elems=>{index_in=>[0,1], rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => [{}, {}, {a=>3}],
+        );
+        test_transmute_data(
+            name   => "arg:index_match",
+            data   => [{a=>1}, {a=>2}, {a=>3}],
+            rules  => [ [transmute_array_elems=>{index_match=>qr/[01]/, rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => [{}, {}, {a=>3}],
+        );
+        test_transmute_data(
+            name   => "arg:index_filter",
+            data   => [{a=>1}, {a=>2}, {a=>3}],
+            rules  => [ [transmute_array_elems=>{index_filter=>sub{ my %args=@_; $args{index} <= 1 }, rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => [{}, {}, {a=>3}],
+        );
     };
 
     subtest "rule: transmute_hash_values" => sub {
@@ -195,6 +219,30 @@ subtest transmute_data => sub {
             data   => {k1=>{bar=>1}, k2=>{bar=>2}, k3=>{baz=>3}},
             rules  => [ [transmute_hash_values=>{rules=>[ [delete_hash_key=>{name=>'bar'}] ]}] ],
             result => {k1=>{}, k2=>{}, k3=>{baz=>3}},
+        );
+        test_transmute_data(
+            name   => "arg:key_is",
+            data   => {k1=>{a=>1}, k2=>{a=>2}, k3=>{a=>3}},
+            rules  => [ [transmute_hash_values=>{key_is=>'k2', rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => {k1=>{a=>1}, k2=>{}, k3=>{a=>3}},
+        );
+        test_transmute_data(
+            name   => "arg:key_in",
+            data   => {k1=>{a=>1}, k2=>{a=>2}, k3=>{a=>3}},
+            rules  => [ [transmute_hash_values=>{key_in=>['k1','k2'], rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => {k1=>{}, k2=>{}, k3=>{a=>3}},
+        );
+        test_transmute_data(
+            name   => "arg:key_match",
+            data   => {k1=>{a=>1}, k2=>{a=>2}, k3=>{a=>3}},
+            rules  => [ [transmute_hash_values=>{key_match=>qr/[12]/, rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => {k1=>{}, k2=>{}, k3=>{a=>3}},
+        );
+        test_transmute_data(
+            name   => "arg:key_filter",
+            data   => {k1=>{a=>1}, k2=>{a=>2}, k3=>{a=>3}},
+            rules  => [ [transmute_hash_values=>{key_filter=>sub{my %args=@_; $args{key} =~ /[12]/}, rules=>[ [delete_hash_key=>{name=>'a'}] ]}] ],
+            result => {k1=>{}, k2=>{}, k3=>{a=>3}},
         );
     };
 };
