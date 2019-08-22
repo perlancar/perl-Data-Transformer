@@ -26,6 +26,8 @@ sub _rule_create_hash_key {
 
 sub _rulereverse_create_hash_key {
     my %args = @_;
+    die "Cannot generate reverse rule create_hash_key with ignore=1"  if $args{ignore};
+    die "Cannot generate reverse rule create_hash_key with replace=1" if $args{replace};
     [delete_hash_key => {name=>$args{name}}];
 }
 
@@ -51,11 +53,11 @@ sub _rule_rename_hash_key {
 
 sub _rulereverse_rename_hash_key {
     my %args = @_;
-    # XXX replace can't really be reversed
+    die "Cannot generate reverse rule rename_hash_key with ignore_missing_from=1"     if $args{ignore_missing_from};
+    die "Cannot generate reverse rule rename_hash_key with ignore_existing_target=1"  if $args{ignore_existing_target};
+    die "Cannot generate reverse rule rename_hash_key with replace=1"                 if $args{replace};
     [rename_hash_key => {
         from=>$args{to}, to=>$args{from},
-        (ignore_missing_from    => $args{ignore_missing_from}   ) x !!defined($args{ignore_missing_from}),
-        (ignore_existing_target => $args{ignore_existing_target}) x !!defined($args{ignore_existing_target}),
     }];
 }
 
@@ -70,7 +72,7 @@ sub _rule_delete_hash_key {
 }
 
 sub _rulereverse_delete_hash_key {
-    die "Can't create a reverse for delete_hash_key rule";
+    die "Can't create reverse rule for delete_hash_key";
 }
 
 sub _rule_transmute_array_elems {
