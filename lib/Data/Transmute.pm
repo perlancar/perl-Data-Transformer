@@ -209,6 +209,7 @@ sub reverse_rules {
      data => \@data,
      rules => [
 
+         # CREATING HASH KEY
 
          # this rule only applies when data is a hash, when data is not a hash
          # this will do nothing. create a single new hash key, error if key
@@ -224,6 +225,8 @@ sub reverse_rules {
          [create_hash_key => {name=>'baz', value=>3, replace=>1}],
 
 
+         # RENAMING HASH KEY
+
          # this rule only applies when data is a hash, when data is not a hash
          # this will do nothing. rename a single key, error if old name doesn't
          # exist or new name exists.
@@ -234,23 +237,48 @@ sub reverse_rules {
          [rename_hash_key => {from=>'corge', to=>'grault', ignore_missing_from=>1, replace=>1}],
 
 
+         # DELETING HASH KEY
+
          # this rule only applies when data is a hash, when data is not a hash
          # this will do nothing. delete a single key, will noop if key already
          # doesn't exist.
          [delete_hash_key => {name=>'garply'}],
 
 
-         # this rule only applies when data is an arrayref, when data is not a
+         # APPLYING (SUB)RULES TO ARRAY ELEMENTS
+
+         # this rule only applies when data is an arrayref, when data is not an
          # array this will do nothing. for each array element, apply transmute
          # rules to it.
          [transmute_array_elems => {rules => [...]}],
 
+         # you can select only certain elements to transmute by using one+ of:
+         # index_is, index_in, index_match, index_filter.
+         [transmute_array_elems => {
+              #index_is => 1,              # only transmute 2nd element (index is 0-based)
+              #index_in => [0,1,2],        # only transmute the first 3 elements
+              #index_match => qr/.../,     # only transmute elements where the index matches a regex
+              #index_filter => sub{...},   # only transmute elements where $filter->(index=>$index) returns true
+              rules => [...],
+          }],
+
+
+         # APPLYING (SUB)RULES TO HASH VALUES
 
          # this rule only applies when data is a hashref, when data is not a
          # hash this will do nothing. for each hash value, apply transmute rules
          # to it.
          [transmute_hash_values => {rules => [...]}],
 
+         # you can select only certain keys to transmute by using one+ of:
+         # key_is, key_in, key_match, key_filter.
+         [transmute_hash_values => {
+              #key_is => 'foo',          # only transmute value of key 'foo'
+              #key_in => ['foo', 'bar'], # only transmute value of keys 'foo', 'bar'
+              #key_match => qr/.../,     # only transmute value of keys that match a regex
+              #key_filter => sub{...},   # only transmute value of keys where $filter->(key=>$key) returns true
+              rules => [...],
+          }],
 
      ],
  );
@@ -263,25 +291,6 @@ using rules which is another data structure (an arrayref of rule
 specifications).
 
 One use-case for this module is to convert/upgrade configuration files.
-
-
-=head1 RULES
-
-Rules is an array of rule specifications.
-
-Each rule specification: [$funcname, \%args]
-
-\%args: a special arg will be inserted: C<data>.
-
-=head2 create_hash_key
-
-=head2 rename_hash_key
-
-=head2 delete_hash_key
-
-=head2 transmute_array_elems
-
-=head2 transmute_hash_values
 
 
 =head1 FUNCTIONS
@@ -297,6 +306,16 @@ argument, which will be modified in-place (so you'll need to clone it first if
 you don't want to modify the original data). Rules is specified in C<rules>
 argument.
 
+Known arguments (C<*> means required):
+
+=over
+
+=item * data*
+
+=item * rules*
+
+=back
+
 =head2 reverse_rules
 
 Usage:
@@ -305,17 +324,147 @@ Usage:
 
 Create a reverse rules, die on failure.
 
+Known arguments (C<*> means required):
+
+=over
+
+=item * rules*
+
+=back
+
+
+
+=head1 RULES
+
+Rules is an array of rule specifications.
+
+Each rule specification: [$funcname, \%args]
+
+\%args: a special arg will be inserted: C<data>.
+
+=head2 create_hash_key
+
+This rule only applies when data is a hash, when data is not a hash this will do
+nothing. Create a single new hash key, error if key already exists.
+
+Known arguments (C<*> means required):
+
+=over
+
+=item * name*
+
+=item * value*
+
+=item * ignore
+
+Bool. If set to true, will ignore/noop if key already exists. This is like
+INSERT IGNORE (INSERT OR IGNORE) in SQL.
+
+=item * replace
+
+Bool. If set to true, will replace existing keys. This is like REPLACE INTO in
+SQL.
+
+=back
+
+=head2 rename_hash_key
+
+This rule only applies when data is a hash, when data is not a hash this will do
+nothing. Rename a single key, error if old name doesn't exist or new name
+exists.
+
+Known arguments (C<*> means required):
+
+=over
+
+=item * from*
+
+=item * to*
+
+=item * ignore_missing_from
+
+Bool. If set to true, will noop (instead of error) if old name doesn't exist.
+
+=item * replace
+
+Bool. If set to true, will overwrite (instead of error) when target key already
+exists.
+
+=back
+
+=head2 delete_hash_key
+
+This rule only applies when data is a hash, when data is not a hash this will do
+nothing. Delete a single key, will noop if key already doesn't exist.
+
+Known arguments (C<*> means required):
+
+=over
+
+=item * name*
+
+=back
+
+=head2 transmute_array_elems
+
+This rule only applies when data is an arrayref, when data is not an array this
+will do nothing. for each array element, apply transmute rules to it.
+
+Known arguments (C<*> means required):
+
+=over
+
+=item * rules*
+
+=item * index_is
+
+=item * index_in
+
+=item * index_match
+
+=item * index_filter
+
+Coderef. Only transmute elements where $coderef->(index=>$index) is true. Aside
+from C<index>, the coderef will also receive these arguments: C<rules> (the
+rule), C<array> (the array).
+
+=back
+
+=head2 transmute_hash_values
+
+This rule only applies when data is a hashref, when data is not a hash this will
+do nothing. For each hash value, apply transmute rules to it.
+
+Known arguments (C<*> means required):
+
+=over
+
+=item * rules*
+
+=item * key_is
+
+=item * key_in
+
+=item * key_match
+
+=item * key_filter
+
+Coderef. Only transmute value of keys where $coderef->(key=>$key) is true. Aside
+from C<key>, the coderef will also receive these arguments: C<rules> (the rule),
+C<hash> (the hash).
+
+=back
+
 
 =head1 TODOS
 
 Check arguments (DZP:Rinci::Wrap?).
 
-Undo?
-
 Function to mass rename keys (by regex substitution, prefix, custom Perl code,
-...).
+...). But this cannot produce reverse of rule.
 
-Function to mass delete keys (by regex, prefix, ...).
+Function to mass delete keys (by regex, prefix, ...). But this cannot produce
+reverse of rule.
 
 
 =head1 SEE ALSO
