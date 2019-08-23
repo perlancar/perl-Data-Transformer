@@ -1,3 +1,20 @@
+0.034   2019-08-23  Released-By: PERLANCAR; Urgency: medium
+
+	[ENHANCEMENTS]
+
+        - Check rule's required arguments.
+
+        - Allow rules_module in reverse_rules(), in rules
+          transmute_{hash_values,array_elems}.
+
+	- Log transmute steps in trace level using Log::ger when
+          LOG_DATA_TRANSMUTE_STEP is true.
+
+        - Add more tests.
+
+        - Add sample rules module Data::Transmute::Rules::Example.
+
+
 0.033   2019-08-22  Released-By: PERLANCAR; Urgency: medium
 
 	- transmute_data(): Add argument rules_module.

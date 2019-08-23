@@ -9,4 +9,5 @@ our @RULES = (
     [rename_hash_key => {from=>'c', to=>'d'}],
 );
 
+1;
 # ABSTRACT: Example rules module
