@@ -6,6 +6,7 @@ package Data::Transmute;
 use 5.010001;
 use strict 'subs', 'vars';
 use warnings;
+use Log::ger;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(transmute_data reverse_rules);
@@ -183,6 +184,10 @@ sub transmute_data {
     my $rulenum = 0;
     for my $rule (@$rules) {
         $rulenum++;
+        if ($ENV{LOG_DATA_TRANSMUTE_STEP}) {
+            log_trace "transmute_data #%d/%d: %s",
+                $rulenum, scalar(@$rules), $rule;
+        }
         my $funcname = "_rule_$rule->[0]";
         die "rule #$rulenum: Unknown function '$rule->[0]'"
             unless defined &{$funcname};
@@ -503,6 +508,14 @@ from C<key>, the coderef will also receive these arguments: C<rules> (the rule),
 C<hash> (the hash).
 
 =back
+
+
+=head1 ENVIRONMENT
+
+=head2 LOG_DATA_TRANSMUTE_STEP
+
+Boolean. If set to true, will log each transmute step (rule by rule) at the
+trace level using L<Log::ger>.
 
 
 =head1 TODOS
