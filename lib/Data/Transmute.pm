@@ -40,9 +40,9 @@ sub _rule_rename_hash_key {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
     my $from = $args{from};
-    die "Rule create_hash_key: Please specify 'from'" unless defined $from;
+    die "Rule rename_hash_key: Please specify 'from'" unless defined $from;
     my $to   = $args{to};
-    die "Rule create_hash_key: Please specify 'to'" unless defined $to;
+    die "Rule rename_hash_key: Please specify 'to'" unless defined $to;
 
     # noop
     return if $from eq $to;
@@ -74,7 +74,7 @@ sub _rule_delete_hash_key {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
     my $name = $args{name};
-    die "Rule create_hash_key: Please specify 'name'" unless defined $name;
+    die "Rule delete_hash_key: Please specify 'name'" unless defined $name;
 
     delete $data->{$name};
 }
@@ -89,7 +89,7 @@ sub _rule_transmute_array_elems {
     my $data = $args{data};
     return unless ref $data eq 'ARRAY';
 
-    die "Rule create_hash_key: Please specify 'rules' or 'rules_module'"
+    die "Rule transmute_array_elems: Please specify 'rules' or 'rules_module'"
         unless defined($args{rules}) || defined($args{rules_module});
 
     my $idx = -1;
@@ -121,7 +121,10 @@ sub _rulereverse_transmute_array_elems {
     my %args = @_;
 
     [transmute_array_elems => {
-        rules => reverse_rules(rules => $args{rules}),
+        rules => reverse_rules(
+            (rules        => $args{rules})        x !!(exists $args{rules}),
+            (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
+        ),
         (index_is     => $args{index_is})     x !!(exists $args{index_is}),
         (index_in     => $args{index_in})     x !!(exists $args{index_in}),
         (index_match  => $args{index_match})  x !!(exists $args{index_match}),
@@ -135,7 +138,7 @@ sub _rule_transmute_hash_values {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
 
-    die "Rule create_hash_key: Please specify 'rules' or 'rules_module'"
+    die "Rule transmute_hash_values: Please specify 'rules' or 'rules_module'"
         unless defined($args{rules}) || defined($args{rules_module});
 
   KEY:

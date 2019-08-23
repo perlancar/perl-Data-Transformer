@@ -42,8 +42,8 @@ sub test_transmute_data {
             my $revrules;
             eval {
                 $revrules = reverse_rules(
-                (rules        => $args{rules})        x !!(exists $args{rules}),
-                (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
+                    (rules        => $args{rules})        x !!(exists $args{rules}),
+                    (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
                 );
             };
 
@@ -129,6 +129,18 @@ subtest transmute_data => sub {
             result => ["bar"],
         );
         test_transmute_data(
+            name   => "required argument: name",
+            data   => {},
+            rules  => [ [create_hash_key=>{value=>2}] ],
+            dies   => 1,
+        );
+        test_transmute_data(
+            name   => "required argument: value",
+            data   => {},
+            rules  => [ [create_hash_key=>{name=>'bar'}] ],
+            dies   => 1,
+        );
+        test_transmute_data(
             name   => "create bar",
             data   => {foo=>1},
             rules  => [ [create_hash_key=>{name=>'bar', value=>2}] ],
@@ -163,6 +175,18 @@ subtest transmute_data => sub {
             data   => ["foo"],
             rules  => [ [rename_hash_key=>{from=>'foo', to=>'bar'}] ],
             result => ["foo"],
+        );
+        test_transmute_data(
+            name   => "required argument: from",
+            data   => {foo=>1},
+            rules  => [ [rename_hash_key=>{to=>'bar'}] ],
+            dies   => 1,
+        );
+        test_transmute_data(
+            name   => "required argument: to",
+            data   => {foo=>1},
+            rules  => [ [rename_hash_key=>{from=>'foo'}] ],
+            dies   => 1,
         );
         test_transmute_data(
             name   => "rename foo",
@@ -214,6 +238,12 @@ subtest transmute_data => sub {
             reverse_dies => 1,
         );
         test_transmute_data(
+            name   => "required argument: name",
+            data   => {foo=>1},
+            rules  => [ [delete_hash_key=>{}] ],
+            dies   => 1,
+        );
+        test_transmute_data(
             name   => "delete foo",
             data   => {foo=>1},
             rules  => [ [delete_hash_key=>{name=>'foo'}] ],
@@ -237,10 +267,22 @@ subtest transmute_data => sub {
             result => {k1=>{a=>1}},
         );
         test_transmute_data(
+            name   => "required argument: rules/rules_module",
+            data   => [],
+            rules  => [ [transmute_array_elems=>{}] ],
+            dies   => 1,
+        );
+        test_transmute_data(
             name   => "basic",
             data   => [{a=>1}, {a=>2}, {}],
             rules  => [ [transmute_array_elems=>{rules=>[ [create_hash_key=>{name=>'b', value=>2}] ]}] ],
             result => [{a=>1,b=>2}, {a=>2,b=>2}, {b=>2}],
+        );
+        test_transmute_data(
+            name   => "rules_module",
+            data   => [{c=>3}],
+            rules  => [ [transmute_array_elems=>{rules_module=>'Example'}] ],
+            result => [{a=>1, b=>2, d=>3}],
         );
         test_transmute_data(
             name   => "arg:index_is",
@@ -276,10 +318,22 @@ subtest transmute_data => sub {
             result => [{a=>1}],
         );
         test_transmute_data(
+            name   => "required argument: rules/rules_module",
+            data   => {},
+            rules  => [ [transmute_hash_values=>{}] ],
+            dies   => 1,
+        );
+        test_transmute_data(
             name   => "basic",
             data   => {k1=>{a=>1}, k2=>{a=>2}, k3=>{a=>3}},
             rules  => [ [transmute_hash_values=>{rules=>[ [create_hash_key=>{name=>'b',value=>2}] ]}] ],
             result => {k1=>{a=>1,b=>2}, k2=>{a=>2,b=>2}, k3=>{a=>3,b=>2}},
+        );
+        test_transmute_data(
+            name   => "rules_module",
+            data   => {k1=>{c=>3}},
+            rules  => [ [transmute_hash_values=>{rules_module=>'Example'}] ],
+            result => {k1=>{a=>1, b=>2, d=>3}},
         );
         test_transmute_data(
             name   => "arg:key_is",
