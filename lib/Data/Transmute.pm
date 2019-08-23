@@ -17,11 +17,13 @@ sub _rule_create_hash_key {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
     my $name = $args{name};
+    die "Rule create_hash_key: Please specify 'name'" unless defined $name;
 
     if (exists $data->{$name}) {
         return if $args{ignore};
-        die "Key '$name' already exists" unless $args{replace};
+        die "Rule create_hash_key: Key '$name' already exists" unless $args{replace};
     }
+    die "Rule create_hash_key: Please specify 'value'" unless exists $args{value};
     $data->{$name} = $args{value};
 }
 
@@ -38,18 +40,22 @@ sub _rule_rename_hash_key {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
     my $from = $args{from};
+    die "Rule create_hash_key: Please specify 'from'" unless defined $from;
     my $to   = $args{to};
+    die "Rule create_hash_key: Please specify 'to'" unless defined $to;
+
+    # noop
+    return if $from eq $to;
 
     if (!exists($data->{$from})) {
-        die "Can't rename hash key '$from' -> '$to': Old key '$from' doesn't exist" unless $args{ignore_missing_from};
+        die "Rule rename_hash_key: Can't rename '$from' -> '$to': Old key '$from' doesn't exist" unless $args{ignore_missing_from};
         return;
     }
     if (exists $data->{$to}) {
         return if $args{ignore_existing_target};
-        die "Can't rename hash key '$from' -> '$to': Target key '$from' already exists" unless $args{replace};
+        die "Rule rename_hash_key: Can't rename '$from' -> '$to': Target key '$from' already exists" unless $args{replace};
     }
-    $data->{$to} = $data->{$from};
-    delete $data->{$from};
+    $data->{$to} = delete $data->{$from};
 }
 
 sub _rulereverse_rename_hash_key {
@@ -68,6 +74,7 @@ sub _rule_delete_hash_key {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
     my $name = $args{name};
+    die "Rule create_hash_key: Please specify 'name'" unless defined $name;
 
     delete $data->{$name};
 }
@@ -81,6 +88,9 @@ sub _rule_transmute_array_elems {
 
     my $data = $args{data};
     return unless ref $data eq 'ARRAY';
+
+    die "Rule create_hash_key: Please specify 'rules' or 'rules_module'"
+        unless defined($args{rules}) || defined($args{rules_module});
 
     my $idx = -1;
   ELEM:
@@ -100,7 +110,8 @@ sub _rule_transmute_array_elems {
         }
         $el = transmute_data(
             data => $el,
-            rules => $args{rules},
+            (rules        => $args{rules})        x !!(exists $args{rules}),
+            (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
         );
     }
     $data;
@@ -124,6 +135,9 @@ sub _rule_transmute_hash_values {
     my $data = $args{data};
     return unless ref $data eq 'HASH';
 
+    die "Rule create_hash_key: Please specify 'rules' or 'rules_module'"
+        unless defined($args{rules}) || defined($args{rules_module});
+
   KEY:
     for my $key (keys %$data) {
         if (defined $args{key_is}) {
@@ -140,7 +154,8 @@ sub _rule_transmute_hash_values {
         }
         $data->{$key} = transmute_data(
             data => $data->{$key},
-            rules => $args{rules},
+            (rules        => $args{rules})        x !!(exists $args{rules}),
+            (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
         );
     }
     $data;
@@ -150,7 +165,10 @@ sub _rulereverse_transmute_hash_values {
     my %args = @_;
 
     [transmute_hash_values => {
-        rules => reverse_rules(rules => $args{rules}),
+        rules => reverse_rules(
+            (rules        => $args{rules})        x !!(exists $args{rules}),
+            (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
+        ),
         (key_is     => $args{key_is})     x !!(exists $args{key_is}),
         (key_in     => $args{key_in})     x !!(exists $args{key_in}),
         (key_match  => $args{key_match})  x !!(exists $args{key_match}),
@@ -468,7 +486,15 @@ Known arguments (C<*> means required):
 
 =over
 
-=item * rules*
+=item * rules
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
+
+=item * rules_module
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
 
 =item * index_is
 
@@ -493,7 +519,15 @@ Known arguments (C<*> means required):
 
 =over
 
-=item * rules*
+=item * rules
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
+
+=item * rules_module
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
 
 =item * key_is
 
@@ -519,8 +553,6 @@ trace level using L<Log::ger>.
 
 
 =head1 TODOS
-
-Check arguments (DZP:Rinci::Wrap?).
 
 Function to mass rename keys (by regex substitution, prefix, custom Perl code,
 ...). But this cannot produce reverse of rule.
