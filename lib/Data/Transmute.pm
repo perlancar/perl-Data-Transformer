@@ -157,21 +157,28 @@ sub _rulereverse_transmute_hash_values {
     }];
 }
 
-sub transmute_data {
-    my %args = @_;
+sub _rules_or_rules_module {
+    my $args = shift;
 
-    exists $args{data} or die "Please specify data";
-    my $data  = $args{data};
-    my $rules = $args{rules};
+    my $rules = $args->{rules};
     if (!$rules) {
-        if (defined $args{rules_module}) {
-            my $mod = "Data::Transmute::Rules::$args{rules_module}";
+        if (defined $args->{rules_module}) {
+            my $mod = "Data::Transmute::Rules::$args->{rules_module}";
             (my $mod_pm = "$mod.pm") =~ s!::!/!g;
             require $mod_pm;
             $rules = \@{"$mod\::RULES"};
         }
     }
     $rules or die "Please specify rules (or rules_module)";
+    $rules;
+}
+
+sub transmute_data {
+    my %args = @_;
+
+    exists $args{data} or die "Please specify data";
+    my $data  = $args{data};
+    my $rules = _rules_or_rules_module(\%args);
 
     my $rulenum = 0;
     for my $rule (@$rules) {
@@ -191,8 +198,10 @@ sub transmute_data {
 sub reverse_rules {
     my %args = @_;
 
+    my $rules = _rules_or_rules_module(\%args);
+
     my @rev_rules;
-    for my $rule (@{ $args{rules} }) {
+    for my $rule (@$rules) {
         my $funcname = "_rulereverse_$rule->[0]";
         my $func = \&{$funcname};
         unshift @rev_rules, $func->(
@@ -356,7 +365,19 @@ Known arguments (C<*> means required):
 
 =over
 
-=item * rules*
+=item * rules
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
+
+See L</transmute_data> for more details.
+
+=item * rules_module
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
+
+See L</transmute_data> for more details.
 
 =back
 
