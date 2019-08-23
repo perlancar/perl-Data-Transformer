@@ -40,12 +40,12 @@ sub _rule_rename_hash_key {
     my $to   = $args{to};
 
     if (!exists($data->{$from})) {
-        die "Old key '$from' doesn't exist" unless $args{ignore_missing_from};
+        die "Can't rename hash key '$from' -> '$to': Old key '$from' doesn't exist" unless $args{ignore_missing_from};
         return;
     }
     if (exists $data->{$to}) {
         return if $args{ignore_existing_target};
-        die "Target key '$from' already exists" unless $args{replace};
+        die "Can't rename hash key '$from' -> '$to': Target key '$from' already exists" unless $args{replace};
     }
     $data->{$to} = $data->{$from};
     delete $data->{$from};

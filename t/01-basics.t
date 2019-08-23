@@ -19,8 +19,9 @@ sub test_transmute_data {
         my $transmuted1;
         eval {
             $transmuted1 = transmute_data(
-                (data => $data)         x !!(exists $args{data}),
-                (rules => $args{rules}) x !!(exists $args{rules}),
+                (data => $data)                       x !!(exists $args{data}),
+                (rules        => $args{rules})        x !!(exists $args{rules}),
+                (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
             );
         };
         $transmuted1 = dclone $transmuted1 if ref $transmuted1;
@@ -40,7 +41,10 @@ sub test_transmute_data {
         subtest reverse_rules => sub {
             my $revrules;
             eval {
-                $revrules = reverse_rules(rules => $args{rules});
+                $revrules = reverse_rules(
+                (rules        => $args{rules})        x !!(exists $args{rules}),
+                (rules_module => $args{rules_module}) x !!(exists $args{rules_module}),
+                );
             };
 
             if ($args{reverse_dies}) {
@@ -109,6 +113,12 @@ subtest transmute_data => sub {
         ],
         result => {foo=>10, baz=>1},
         test_reverse => 0, # because reverse of #3 will delete foo
+    );
+    test_transmute_data(
+        name   => "rules_module",
+        data   => {c=>3},
+        rules_module => 'Example',
+        result => {a=>1, b=>2, d=>3},
     );
 
     subtest "rule: create_hash_key" => sub {
