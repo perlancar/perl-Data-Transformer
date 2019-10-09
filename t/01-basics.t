@@ -259,6 +259,13 @@ subtest transmute_data => sub {
             rules  => [ [modify_hash_value=>{name=>"a", from=>1, to=>2}] ],
             result => {a=>2},
         );
+        test_transmute_data(
+            name   => "from is optional",
+            data   => {a=>3},
+            rules  => [ [modify_hash_value=>{name=>"a", to=>2}] ],
+            result => {a=>2},
+            reverse_dies => 1,
+        );
     };
 
     subtest "rule: delete_hash_key" => sub {
