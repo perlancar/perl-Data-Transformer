@@ -68,6 +68,45 @@ sub _rulereverse_rename_hash_key {
     }];
 }
 
+sub _rule_modify_hash_value {
+    require Data::Cmp;
+
+    my %args = @_;
+
+    my $data = $args{data};
+    return unless ref $data eq 'HASH';
+    my $name = $args{name};
+    die "Rule modify_hash_value: Please specify 'name' (key)" unless defined $name;
+    my $from = $args{from};
+    die "Rule modify_hash_value: Please specify 'from'" unless exists $args{from};
+    my $to   = $args{to};
+    die "Rule rename_hash_key: Please specify 'to'" unless exists $args{to};
+
+    my $errprefix = "Rule modify_hash_value: Can't modify key '$name' from '".
+        ($from // '<undef>')."' to '".($to // '<undef>')."'";
+
+    unless (exists $data->{$name}) {
+        die "$errprefix: key does not exist";
+    }
+
+    my $cur = $data->{$name};
+    if (Data::Cmp::cmp_data($cur, $from)) {
+        die "$errprefix: current value is not '".($cur // '<undef>')."'";
+    }
+
+    # noop
+    return unless Data::Cmp::cmp_data($from, $to);
+
+    $data->{$name} = $to;
+}
+
+sub _rulereverse_modify_hash_value {
+    my %args = @_;
+    [modify_hash_value => {
+        name => $args{name}, from => $args{to}, to => $args{from},
+    }];
+}
+
 sub _rule_delete_hash_key {
     my %args = @_;
 
@@ -483,6 +522,30 @@ Bool. If set to true, will noop (instead of error) if old name doesn't exist.
 
 Bool. If set to true, will overwrite (instead of error) when target key already
 exists.
+
+=back
+
+=head2 modify_hash_value
+
+This rule only applies when data is a hash, when data is not a hash this will do
+nothing. Modify a single hash value from original value I<from> to new value
+I<to>. Key must exist, and value must originally be I<from>.
+
+Known arguments (C<*> means required):
+
+=over
+
+=item * name*
+
+String. Key name.
+
+=item * from*
+
+String or undef. Original value.
+
+=item * to*
+
+String or undef. New value.
 
 =back
 
