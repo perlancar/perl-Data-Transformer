@@ -49,6 +49,7 @@ sub _rule_rename_hash_key {
 
     if (!exists($data->{$from})) {
         die "Rule rename_hash_key: Can't rename '$from' -> '$to': Old key '$from' doesn't exist" unless $args{ignore_missing_from};
+        return;
     }
     if (exists $data->{$to}) {
         return if $args{ignore_existing_target};
