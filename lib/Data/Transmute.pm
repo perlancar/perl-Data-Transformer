@@ -77,30 +77,35 @@ sub _rule_modify_hash_value {
     my $name = $args{name};
     die "Rule modify_hash_value: Please specify 'name' (key)" unless defined $name;
     my $from = $args{from};
-    die "Rule modify_hash_value: Please specify 'from'" unless exists $args{from};
+    my $from_exists = exists $args{from};
     my $to   = $args{to};
     die "Rule rename_hash_key: Please specify 'to'" unless exists $args{to};
 
-    my $errprefix = "Rule modify_hash_value: Can't modify key '$name' from '".
-        ($from // '<undef>')."' to '".($to // '<undef>')."'";
+    my $errprefix = "Rule modify_hash_value: Can't modify key '$name'".
+        ($from_exists ? " from '".($from // '<undef>') : "").
+        "' to '".($to // '<undef>')."'";
 
     unless (exists $data->{$name}) {
         die "$errprefix: key does not exist";
     }
 
     my $cur = $data->{$name};
-    if (Data::Cmp::cmp_data($cur, $from)) {
-        die "$errprefix: current value is not '".($cur // '<undef>')."'";
-    }
 
-    # noop
-    return unless Data::Cmp::cmp_data($from, $to);
+    if ($from_exists) {
+        # noop
+        return unless Data::Cmp::cmp_data($from, $to);
+
+        if (Data::Cmp::cmp_data($cur, $from)) {
+            die "$errprefix: current value is not '".($cur // '<undef>')."'";
+        }
+    }
 
     $data->{$name} = $to;
 }
 
 sub _rulereverse_modify_hash_value {
     my %args = @_;
+    die "Cannot generate reverse rule modify_hash_value without from" unless exists $args{from};
     [modify_hash_value => {
         name => $args{name}, from => $args{to}, to => $args{from},
     }];
