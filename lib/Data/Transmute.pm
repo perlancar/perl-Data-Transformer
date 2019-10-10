@@ -665,4 +665,6 @@ L<Config::Model>, which you can also use to convert/upgrade configuration files.
 But I find this module slightly too heavyweight for the simpler needs that I
 have, hence I created Data::Transmute.
 
+L<Bencher::Scenarios::DataTransmute>
+
 =cut
