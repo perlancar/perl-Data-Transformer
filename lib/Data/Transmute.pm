@@ -10,6 +10,7 @@ use strict 'subs', 'vars';
 use warnings;
 use Log::ger;
 
+use Ref::Util qw(is_hashref is_arrayref is_plain_hashref is_plain_arrayref);
 use Scalar::Util qw(refaddr);
 
 use Exporter qw(import);
@@ -19,7 +20,8 @@ sub _rule_create_hash_key {
     my %args = @_;
 
     my $data = $args{data};
-    return unless ref $data eq 'HASH';
+    return unless ($args{transmute_object} // 1) ? is_hashref($data) : is_plain_hashref($data);
+
     my $name = $args{name};
     die "Rule create_hash_key: Please specify 'name'" unless defined $name;
 
@@ -37,14 +39,15 @@ sub _rulereverse_create_hash_key {
     die "Cannot generate reverse rule create_hash_key with value_code" if $args{value_code};
     die "Cannot generate reverse rule create_hash_key with ignore=1"   if $args{ignore};
     die "Cannot generate reverse rule create_hash_key with replace=1"  if $args{replace};
-    [delete_hash_key => {name=>$args{name}}];
+    [delete_hash_key => {name=>$args{name}, transmute_object=>$args{transmute_object}}];
 }
 
 sub _rule_rename_hash_key {
     my %args = @_;
 
     my $data = $args{data};
-    return unless ref $data eq 'HASH';
+    return unless ($args{transmute_object} // 1) ? is_hashref($data) : is_plain_hashref($data);
+
     my $from = $args{from};
     die "Rule rename_hash_key: Please specify 'from'" unless defined $from;
     my $to   = $args{to};
@@ -71,6 +74,7 @@ sub _rulereverse_rename_hash_key {
     die "Cannot generate reverse rule rename_hash_key with replace=1"                 if $args{replace};
     [rename_hash_key => {
         from=>$args{to}, to=>$args{from},
+        transmute_object=>$args{transmute_object},
     }];
 }
 
@@ -80,7 +84,8 @@ sub _rule_modify_hash_value {
     my %args = @_;
 
     my $data = $args{data};
-    return unless ref $data eq 'HASH';
+    return unless ($args{transmute_object} // 1) ? is_hashref($data) : is_plain_hashref($data);
+
     my $name = $args{name};
     die "Rule modify_hash_value: Please specify 'name' (key)" unless defined $name;
     my $from = $args{from};
@@ -119,6 +124,7 @@ sub _rulereverse_modify_hash_value {
     die "Cannot generate reverse rule modify_hash_value with to_code" if $args{to_code};
     [modify_hash_value => {
         name => $args{name}, from => $args{to}, to => $args{from},
+        transmute_object=>$args{transmute_object},
     }];
 }
 
@@ -126,7 +132,8 @@ sub _rule_delete_hash_key {
     my %args = @_;
 
     my $data = $args{data};
-    return unless ref $data eq 'HASH';
+    return unless ($args{transmute_object} // 1) ? is_hashref($data) : is_plain_hashref($data);
+
     my $name = $args{name};
     die "Rule delete_hash_key: Please specify 'name'" unless defined $name;
 
@@ -141,7 +148,7 @@ sub _rule_transmute_array_elems {
     my %args = @_;
 
     my $data = $args{data};
-    return unless ref $data eq 'ARRAY';
+    return unless ($args{transmute_object} //1) ? is_arrayref($data) : is_plain_arrayref($data);
 
     die "Rule transmute_array_elems: Please specify 'rules' or 'rules_module'"
         unless defined($args{rules}) || defined($args{rules_module});
@@ -183,6 +190,7 @@ sub _rulereverse_transmute_array_elems {
         (index_in     => $args{index_in})     x !!(exists $args{index_in}),
         (index_match  => $args{index_match})  x !!(exists $args{index_match}),
         (index_filter => $args{index_filter}) x !!(exists $args{index_filter}),
+        transmute_object=>$args{transmute_object},
     }];
 }
 
@@ -190,7 +198,7 @@ sub _rule_transmute_hash_values {
     my %args = @_;
 
     my $data = $args{data};
-    return unless ref $data eq 'HASH';
+    return unless ($args{transmute_object} //1) ? is_hashref($data) : is_plain_hashref($data);
 
     die "Rule transmute_hash_values: Please specify 'rules' or 'rules_module'"
         unless defined($args{rules}) || defined($args{rules_module});
@@ -230,6 +238,7 @@ sub _rulereverse_transmute_hash_values {
         (key_in     => $args{key_in})     x !!(exists $args{key_in}),
         (key_match  => $args{key_match})  x !!(exists $args{key_match}),
         (key_filter => $args{key_filter}) x !!(exists $args{key_filter}),
+        transmute_object=>$args{transmute_object},
     }];
 }
 
@@ -242,15 +251,17 @@ sub _walk {
         (rules        => $rule_args->{rules})        x !!(exists $rule_args->{rules}),
         (rules_module => $rule_args->{rules_module}) x !!(exists $rule_args->{rules_module}),
     );
-    my $ref = ref($data) or return;
     my $refaddr = refaddr($data);
+    return unless $refaddr;
     return if $seen->{$refaddr}++;
 
-    if ($ref eq 'ARRAY') {
+    if ($rule_args->{recurse_object} ?
+            is_arrayref($data) : is_plain_arrayref($data)) {
         for my $elem (@$data) {
             _walk($elem, $rule_args, $seen);
         }
-    } elsif ($ref eq 'HASH') {
+    } elsif ($rule_args->{recurse_object} ?
+            is_hashref($data) : is_plain_hashref($data)) {
         for my $key (sort keys %$data) {
             _walk($data->{$key}, $rule_args, $seen);
         }
@@ -607,6 +618,11 @@ SQL.
 
 If you set C<replace> to true, your rule will become irreversible.
 
+=item * transmute_object
+
+Bool, default true. By default, blessed hash is also transmuted. But if you set
+this to false, blessed hash will not be touched.
+
 =back
 
 =head2 rename_hash_key
@@ -631,6 +647,11 @@ Bool. If set to true, will noop (instead of error) if old name doesn't exist.
 
 Bool. If set to true, will overwrite (instead of error) when target key already
 exists.
+
+=item * transmute_object
+
+Bool, default true. By default, blessed hash is also transmuted. But if you set
+this to false, blessed hash will not be touched.
 
 =back
 
@@ -666,6 +687,11 @@ current value.
 
 If you set C<to_code>, your rule will become irreversible.
 
+=item * transmute_object
+
+Bool, default true. By default, blessed hash is also transmuted. But if you set
+this to false, blessed hash will not be touched.
+
 =back
 
 =head2 delete_hash_key
@@ -678,6 +704,11 @@ Known arguments (C<*> means required):
 =over
 
 =item * name*
+
+=item * transmute_object
+
+Bool, default true. By default, blessed hash is also transmuted. But if you set
+this to false, blessed hash will not be touched.
 
 =back
 
@@ -712,6 +743,11 @@ Coderef. Only transmute elements where $coderef->(index=>$index) is true. Aside
 from C<index>, the coderef will also receive these arguments: C<rules> (the
 rule), C<array> (the array).
 
+=item * transmute_object
+
+Bool, default true. By default, blessed array is also transmuted. But if you set
+this to false, blessed array will not be touched.
+
 =back
 
 =head2 transmute_hash_values
@@ -745,6 +781,11 @@ Coderef. Only transmute value of keys where $coderef->(key=>$key) is true. Aside
 from C<key>, the coderef will also receive these arguments: C<rules> (the rule),
 C<hash> (the hash).
 
+=item * transmute_object
+
+Bool, default true. By default, blessed hash is also transmuted. But if you set
+this to false, blessed hash will not be touched.
+
 =back
 
 =head2 transmute_nodes
@@ -758,6 +799,12 @@ This rule is not irreversible.
 Known arguments (C<*> means required):
 
 =over
+
+=item * recurse_object
+
+Boolean, default B<false>. Whether to recurse into (hash-based and array-based)
+objects. By default, B<objects are not recursed>. Set this to true to recurse
+into objects.
 
 =item * rules
 
