@@ -134,7 +134,7 @@ subtest transmute_data => sub {
             dies   => 1,
         );
         test_transmute_data(
-            name   => "required argument: value",
+            name   => "required argument: value|value_code",
             data   => {},
             rules  => [ [create_hash_key=>{name=>'bar'}] ],
             dies   => 1,
@@ -144,6 +144,13 @@ subtest transmute_data => sub {
             data   => {foo=>1},
             rules  => [ [create_hash_key=>{name=>'bar', value=>2}] ],
             result => {foo=>1, bar=>2},
+        );
+        test_transmute_data(
+            name   => "create bar (with value_code)",
+            data   => {foo=>1},
+            rules  => [ [create_hash_key=>{name=>'bar', value_code=>sub {1+1} }] ],
+            result => {foo=>1, bar=>2},
+            reverse_dies => 1,
         );
         test_transmute_data(
             name   => "foo already exists -> dies",
@@ -258,6 +265,13 @@ subtest transmute_data => sub {
             data   => {a=>1},
             rules  => [ [modify_hash_value=>{name=>"a", from=>1, to=>2}] ],
             result => {a=>2},
+        );
+        test_transmute_data(
+            name   => "modify a (with to_code)",
+            data   => {a=>1},
+            rules  => [ [modify_hash_value=>{name=>"a", from=>1, to_code=>sub {1+1}}] ],
+            result => {a=>2},
+            reverse_dies => 1,
         );
         test_transmute_data(
             name   => "from is optional",
@@ -399,6 +413,24 @@ subtest transmute_data => sub {
             result => {k1=>{a=>1,b=>2}, k2=>{a=>2,b=>2}, k3=>{a=>3}},
         );
     };
+
+    subtest "rule: transmute_nodes" => sub {
+
+        my $tree = {id=>1, parent=>undef, children=>[ {id=>2, children=>[]}, {id=>3, children=>[ {id=>4, children=>[] } ]} ]};
+        $tree->{children}[0]{parent} = $tree;
+        $tree->{children}[1]{parent} = $tree;
+        $tree->{children}[1]{children}[0]{parent} = $tree->{children}[1];
+
+        my $transmuted_tree = {id=>1, parent=>"foo", children=>[ {id=>2, children=>[], parent=>"foo"}, {id=>3, children=>[ {id=>4, children=>[], parent=>"foo" } ], parent=>"foo"} ]};
+
+        test_transmute_data(
+            data   => $tree,
+            rules  => [ [transmute_nodes=>{rules=>[ [create_hash_key=>{name=>'parent', replace=>1, value=>'foo'}] ]}] ],
+            result => $transmuted_tree,
+            reverse_dies => 1,
+        );
+    };
+
 };
 
 DONE_TESTING:

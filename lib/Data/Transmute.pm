@@ -1,12 +1,16 @@
 package Data::Transmute;
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
 use 5.010001;
 use strict 'subs', 'vars';
 use warnings;
 use Log::ger;
+
+use Scalar::Util qw(refaddr);
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(transmute_data reverse_rules);
@@ -23,14 +27,16 @@ sub _rule_create_hash_key {
         return if $args{ignore};
         die "Rule create_hash_key: Key '$name' already exists" unless $args{replace};
     }
-    die "Rule create_hash_key: Please specify 'value'" unless exists $args{value};
-    $data->{$name} = $args{value};
+    die "Rule create_hash_key: Please specify 'value' or 'value_code'"
+        unless exists $args{value} || $args{value_code};
+    $data->{$name} = $args{value_code} ? $args{value_code}->($data->{$name}) : $args{value};
 }
 
 sub _rulereverse_create_hash_key {
     my %args = @_;
-    die "Cannot generate reverse rule create_hash_key with ignore=1"  if $args{ignore};
-    die "Cannot generate reverse rule create_hash_key with replace=1" if $args{replace};
+    die "Cannot generate reverse rule create_hash_key with value_code" if $args{value_code};
+    die "Cannot generate reverse rule create_hash_key with ignore=1"   if $args{ignore};
+    die "Cannot generate reverse rule create_hash_key with replace=1"  if $args{replace};
     [delete_hash_key => {name=>$args{name}}];
 }
 
@@ -80,17 +86,20 @@ sub _rule_modify_hash_value {
     my $from = $args{from};
     my $from_exists = exists $args{from};
     my $to   = $args{to};
-    die "Rule rename_hash_key: Please specify 'to'" unless exists $args{to};
+    die "Rule rename_hash_key: Please specify 'to' or 'to_code'"
+        unless exists $args{to} || $args{to_code};
 
     my $errprefix = "Rule modify_hash_value: Can't modify key '$name'".
         ($from_exists ? " from '".($from // '<undef>') : "").
-        "' to '".($to // '<undef>')."'";
+        ($args{to_code} ? "' using to_code" : "' to '".($to // '<undef>')."'");
 
     unless (exists $data->{$name}) {
         die "$errprefix: key does not exist";
     }
 
     my $cur = $data->{$name};
+
+    $to = $args{to_code}->($cur) if $args{to_code};
 
     if ($from_exists) {
         # noop
@@ -107,6 +116,7 @@ sub _rule_modify_hash_value {
 sub _rulereverse_modify_hash_value {
     my %args = @_;
     die "Cannot generate reverse rule modify_hash_value without from" unless exists $args{from};
+    die "Cannot generate reverse rule modify_hash_value with to_code" if $args{to_code};
     [modify_hash_value => {
         name => $args{name}, from => $args{to}, to => $args{from},
     }];
@@ -221,6 +231,47 @@ sub _rulereverse_transmute_hash_values {
         (key_match  => $args{key_match})  x !!(exists $args{key_match}),
         (key_filter => $args{key_filter}) x !!(exists $args{key_filter}),
     }];
+}
+
+sub _walk {
+    my ($data, $rule_args, $seen) = @_;
+
+    # transmute the node itself
+    transmute_data(
+        data => $data,
+        (rules        => $rule_args->{rules})        x !!(exists $rule_args->{rules}),
+        (rules_module => $rule_args->{rules_module}) x !!(exists $rule_args->{rules_module}),
+    );
+    my $ref = ref($data) or return;
+    my $refaddr = refaddr($data);
+    return if $seen->{$refaddr}++;
+
+    if ($ref eq 'ARRAY') {
+        for my $elem (@$data) {
+            _walk($elem, $rule_args, $seen);
+        }
+    } elsif ($ref eq 'HASH') {
+        for my $key (sort keys %$data) {
+            _walk($data->{$key}, $rule_args, $seen);
+        }
+    }
+}
+
+sub _rule_transmute_nodes {
+    my %args = @_;
+
+    my $data = $args{data};
+
+    die "Rule transmute_nodes: Please specify 'rules' or 'rules_module'"
+        unless defined($args{rules}) || defined($args{rules_module});
+
+    my $seen = {};
+    _walk($data, \%args, $seen);
+    $data;
+}
+
+sub _rulereverse_transmute_nodes {
+    die "Rule transmute_nodes is not reversible";
 }
 
 sub _rules_or_rules_module {
@@ -491,17 +542,33 @@ Known arguments (C<*> means required):
 
 =item * name*
 
-=item * value*
+=item * value
+
+Either C<value> or C<value_code> is required.
+
+=item * value_code
+
+Either C<value> or C<value_code> is required.
+
+Instead of specifying value, you can also supply a coderef to compute the value.
+The coderef will be passed the current value of the hash key (or undef if there
+is none).
+
+If you supply C<value_code>, your rule will become irreversible.
 
 =item * ignore
 
 Bool. If set to true, will ignore/noop if key already exists. This is like
 INSERT IGNORE (INSERT OR IGNORE) in SQL.
 
+If you set C<ignore> to true, your rule will become irreversible.
+
 =item * replace
 
 Bool. If set to true, will replace existing keys. This is like REPLACE INTO in
 SQL.
+
+If you set C<replace> to true, your rule will become irreversible.
 
 =back
 
@@ -548,9 +615,19 @@ String. Key name.
 
 String or undef. Original value.
 
-=item * to*
+=item * to
 
 String or undef. New value.
+
+Either C<to> or C<to_code> is required.
+
+=item * to_code
+
+Coderef. Instead of specifying new vlaue via C<to>, you can also supply
+C<to_code> (a coderef) to compute the value. The coderef will be passed the
+current value.
+
+If you set C<to_code>, your rule will become irreversible.
 
 =back
 
@@ -630,6 +707,30 @@ C<rules_module>.
 Coderef. Only transmute value of keys where $coderef->(key=>$key) is true. Aside
 from C<key>, the coderef will also receive these arguments: C<rules> (the rule),
 C<hash> (the hash).
+
+=back
+
+=head2 transmute_nodes
+
+This rule will transmute data, then recurse (walk) to array elements (if data is
+an array) or hash values (if data is a hash) and transmute each of those child
+data. Can handle circular references.
+
+This rule is not irreversible.
+
+Known arguments (C<*> means required):
+
+=over
+
+=item * rules
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
+
+=item * rules_module
+
+Either C<rules> or C<rules_module> is required. C<rules> takes precedence over
+C<rules_module>.
 
 =back
 
