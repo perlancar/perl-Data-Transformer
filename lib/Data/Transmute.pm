@@ -354,13 +354,18 @@ sub reverse_rules {
          [create_hash_key => {name=>'foo', value=>1}],
 
          # create another hash key, but this time ignore/noop if key already
-         # exists (ignore=1). this is like INSERT IGNORE in SQL.
+         # exists (ignore=1). this is like INSERT IGNORE in SQL. note: this
+         # makes the rule irreversible.
          [create_hash_key => {name=>'bar', value=>2, ignore=>1}],
 
          # create yet another key, this time replace existing keys (replace=1).
-         # this is like REPLACE INTO in SQL.
+         # this is like REPLACE INTO in SQL. note: this makes the rule
+         # irreversible.
          [create_hash_key => {name=>'baz', value=>3, replace=>1}],
 
+         # compute value with coderef (supply 'value_code' instead of 'value').
+         # note: this makes the rule irreversible.
+         [create_hash_key => {name=>'baz', value_code=>sub {uc($_[0]}, replace=>1}],
 
          # RENAMING HASH KEY
 
@@ -372,6 +377,23 @@ sub reverse_rules {
          # rename another key, but this time ignore if old name doesn't exist
          # (ignore=1) or if new name already exists (replace=1)
          [rename_hash_key => {from=>'corge', to=>'grault', ignore_missing_from=>1, replace=>1}],
+
+
+         # MODIFYING HASH VALUE
+
+         # this rule only applies when data is a hash, when data is not a hash
+         # this will do nothing. change the value of a single keypair (key
+         # specified in 'name'), error if key doesn't exist or old value doesn't
+         # equal specified ('from').
+         [modify_hash_value => {name=>'foo', from=>'old', to=>'new'}],
+
+         # 'from' is optional, but if you omit it, the rule becomes
+         # irreversible.
+         [modify_hash_value => {name=>'foo', to=>'new'}],
+
+         # instead of specifying new value in 'to', you can compute new value
+         # using 'to_code'. note: if you do this the rule becomes irreversible.
+         [modify_hash_value => {name=>'foo', from_old=>'old', to_code=>sub {uc $_[0]}}],
 
 
          # DELETING HASH KEY
@@ -387,16 +409,18 @@ sub reverse_rules {
          # this rule only applies when data is an arrayref, when data is not an
          # array this will do nothing. for each array element, apply transmute
          # rules to it.
-         [transmute_array_elems => {rules => [...]}],
+         [transmute_array_elems => {
+              rules => [...],              # or 'rules_module'
+          }],
 
          # you can select only certain elements to transmute by using one+ of:
          # index_is, index_in, index_match, index_filter.
          [transmute_array_elems => {
+              rules => [...],              # or 'rules_module'
               #index_is => 1,              # only transmute 2nd element (index is 0-based)
               #index_in => [0,1,2],        # only transmute the first 3 elements
               #index_match => qr/.../,     # only transmute elements where the index matches a regex
               #index_filter => sub{...},   # only transmute elements where $filter->(index=>$index) returns true
-              rules => [...],
           }],
 
 
@@ -405,16 +429,29 @@ sub reverse_rules {
          # this rule only applies when data is a hashref, when data is not a
          # hash this will do nothing. for each hash value, apply transmute rules
          # to it.
-         [transmute_hash_values => {rules => [...]}],
+         [transmute_hash_values => {
+              rules => [...],            # or 'rules_module'
+
+          }],
 
          # you can select only certain keys to transmute by using one+ of:
          # key_is, key_in, key_match, key_filter.
          [transmute_hash_values => {
+              rules => [...],            # or 'rules_module'
               #key_is => 'foo',          # only transmute value of key 'foo'
               #key_in => ['foo', 'bar'], # only transmute value of keys 'foo', 'bar'
               #key_match => qr/.../,     # only transmute value of keys that match a regex
               #key_filter => sub{...},   # only transmute value of keys where $filter->(key=>$key) returns true
-              rules => [...],
+          }],
+
+
+         # APPLYING (SUB)RULES TO NODES
+
+         # this rule will transmute data, then recurse (walk) to array elements
+         # (if data is an array) and hash values (if data is a hash). can handle
+         # circular references. this rule is irreversible.
+         [transmute_nodes => {
+              rules => [...],              # or 'rules_module'
           }],
 
      ],
