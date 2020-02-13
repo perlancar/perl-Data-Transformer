@@ -1,3 +1,12 @@
+0.037   2020-02-13  Released-By: PERLANCAR; Urgency: medium
+
+        - Add rule: transmute_nodes.
+
+	- Rule create_hash_key: add argument value_code.
+
+        - Rule modify_hash_value: add argument to_code.
+
+
 0.036   2019-10-10  Released-By: PERLANCAR; Urgency: medium
 
 	- Add rule: modify_hash_value.
