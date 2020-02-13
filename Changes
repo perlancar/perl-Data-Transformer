@@ -1,3 +1,9 @@
+0.039   2020-02-13  Released-By: PERLANCAR; Urgency: medium
+
+	- Add transmute_object & recurse_object arguments to set how to
+	  behave when dealing with objects.
+
+
 0.038   2020-02-13  Released-By: PERLANCAR; Urgency: low
 
 	- No functional changes.
